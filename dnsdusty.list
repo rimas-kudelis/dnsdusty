@@ -1,0 +1,45 @@
+#
+# "$Id$"
+#
+
+# Directories...
+$prefix=/usr
+$exec_prefix=/usr
+$datadir=/usr/share
+$tmpldir=${datadir}/dnsdusty/templates
+$docdir=/usr/share/doc/dnsdusty
+$libdir=/usr/lib/dnsdusty
+$cgidir=${libdir}/cgi-bin
+$sysconfdir=/etc/dnsdusty
+$srcdir=.
+
+# user info
+$webgroup=www-data
+
+# Product information
+%product DNSDusty
+%copyright 2004 by Jeffrey Layton, all rights reserved.
+%vendor http://www.poochiereds.net/dnsdusty
+%license ${srcdir}/COPYING
+%readme ${srcdir}/README
+%description Web-Based DDNS Management Tool
+%version 0.5
+
+# CGI programs
+%system all
+d 0755 root sys ${cgidir} -
+f 0754 root ${webgroup} ${cgidir}/dnsdusty ${srcdir}/dnsdusty
+
+# templates
+d 0755 root sys ${tmpldir} -
+f 0644 root sys ${tmpldir} ${srcdir}/templates/*
+
+# Documentation
+d 0755 root sys ${docdir} -
+f 0444 root sys ${docdir}/README $srcdir/README
+f 0444 root sys ${docdir}/COPYING $srcdir/COPYING
+
+# config file
+d 0755 root sys ${sysconfdir} -
+f 0640 root ${webgroup} ${sysconfdir}/dnsdusty.conf $srcdir/dnsdusty.conf
+

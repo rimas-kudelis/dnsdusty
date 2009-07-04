@@ -1,0 +1,20 @@
+<!-- zoneform.tmpl -->
+<html>
+<head>
+<title>DNSDusty</title>
+<script type="text/javascript">
+var message = "<tmpl_var message>";
+if ( message.length != 0 ) {
+    alert(message);
+}
+</script>
+</head>
+<body>
+<h1 align=center>DNSDusty</h1>
+<p>
+<tmpl_var form-start>
+<tmpl_var field-zone><tmpl_var field-class>
+<p>
+<tmpl_var form-submit>
+<tmpl_var form-end>
+

@@ -1,0 +1,19 @@
+dnsdusty (0.5)
+
+   * Interface overhaul -- everything on one page now. No separate webpages.
+   * Code cleanup, better use of subroutines.
+
+ -- Jeffrey Layton <jtlayton@poochiereds.net> Fri, 26 Mar 2004 13:00:52 -0500
+
+dnsdusty (0.4)
+
+   * Add in support for per-zone authorization. Depends on HTTP Auth.
+
+ -- Jeffrey Layton <jtlayton@poochiereds.net> Fri, 26 Mar 2004 13:00:52 -0500
+
+dnsdusty (0.3)
+
+   * First public release!
+
+ -- Jeffrey Layton <jtlayton@poochiereds.net> Sat, 21 Feb 2004 08:19:11 -0500
+
