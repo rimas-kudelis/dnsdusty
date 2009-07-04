@@ -82,7 +82,7 @@ sub zone_transfer {
 	next if ($record->type eq 'SOA');
 	push (@rr,$record->string);
     }
-    my @sortedrr = sort(@rr);
+    my @sortedrr = sort {uc($a) cmp uc($b)} @rr;
     return \@sortedrr;
 }
 
