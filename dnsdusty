@@ -92,6 +92,10 @@ sub add_records {
     # create update packet
     my $update = Net::DNS::Update->new($zone,$class);
     my $rr = "$name.$zone $ttl $type $content";
+
+    # EXCEPTION: if type is TXT, put double-quotes around the content...
+    $rr = "$name.$zone $ttl $type \"$content\"" if ( "$type" eq "TXT" );
+
     $update->push(update => rr_add($rr));
     my $reply = ${$res}->send($update);
 
