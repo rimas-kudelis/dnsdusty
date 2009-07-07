@@ -41,5 +41,5 @@ f 0444 root sys ${docdir}/COPYING $srcdir/COPYING
 
 # config file
 d 0755 root sys ${sysconfdir} -
-f 0640 root ${webgroup} ${sysconfdir}/dnsdusty.conf $srcdir/dnsdusty.conf
+c 0640 root ${webgroup} ${sysconfdir}/dnsdusty.conf $srcdir/dnsdusty.conf
 

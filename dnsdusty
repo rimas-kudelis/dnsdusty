@@ -4,7 +4,7 @@
 # dnsdusty -- CGI program to add and remove records from DNS using
 #             dynamic updates
 #
-#  Copyright (c) 2004, Jeffrey Layton
+#  Copyright (c) 2004-2009, Jeffrey Layton
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
