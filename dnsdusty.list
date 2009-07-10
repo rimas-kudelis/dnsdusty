@@ -23,7 +23,7 @@ $webgroup=www-data
 %license ${srcdir}/COPYING
 %readme ${srcdir}/README
 %description Web-Based DDNS Management Tool
-%version 0.5
+%version 0.6
 
 # CGI programs
 %system all

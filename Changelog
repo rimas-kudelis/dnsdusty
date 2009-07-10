@@ -1,3 +1,12 @@
+dnsdusty (0.6)
+
+   * list entries in domain order
+   * fixed TXT record entry so that double-quotes are not necessary
+   * Change record sorting to be case insensitve
+   * fix config file declaration in EPM list file
+
+ -- Erik Rossen <rossen@rossen.ch> Sun, Jul  5 17:08:12 CEST 2009
+
 dnsdusty (0.5)
 
    * Interface overhaul -- everything on one page now. No separate webpages.
