@@ -73,16 +73,30 @@ sub get_resolver_object {
     return \$res;
 }
 
+# returns a sort value which is an upper case, big-endian (i.e. TLD first),
+# zero-padded string of each domain name
+sub canonicalize_name {
+    # set number of zeros used to pad sequences of decimal digits
+    # NOTE: this is a lazy hack
+    my $nzeros = 10;
+    my $mname = uc($1);  # shift everything to uppercase
+    $mname = join ".", reverse split /\./, $mname;  # make domain big-endian
+    $mname =~ s/\d+/sprintf("%0${nzeros}d",$&)/eg;  # zero-pad all decimal sequences
+    return $mname;
+}
 
 sub zone_transfer {
     my ($res,$zone,$class) = @_;
+    my %mn = (); # hash for munged names of RRs
     my @rr = ();
     my @zonerecs = ${$res}->axfr($zone,$class);
     foreach my $record (@zonerecs) {
 	next if ($record->type eq 'SOA');
+	$record->string =~ /(\S+)/; # assume domain name occupies first non-whitespace chars of each record
+	$mn{$record->string} = canonicalize_name($1);
 	push (@rr,$record->string);
     }
-    my @sortedrr = sort {uc($a) cmp uc($b)} @rr;
+    my @sortedrr = sort { $mn{$a} cmp $mn{$b} } @rr;
     return \@sortedrr;
 }
 
