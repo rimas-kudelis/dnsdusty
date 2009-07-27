@@ -23,7 +23,7 @@ $webgroup=www-data
 %license ${srcdir}/COPYING
 %readme ${srcdir}/README
 %description Web-Based DDNS Management Tool
-%version 0.6
+%version 0.7
 
 # CGI programs
 %system all
@@ -36,6 +36,7 @@ f 0644 root sys ${tmpldir} ${srcdir}/templates/*
 
 # Documentation
 d 0755 root sys ${docdir} -
+f 0444 root sys ${docdir}/Changelog $srcdir/Changelog
 f 0444 root sys ${docdir}/README $srcdir/README
 f 0444 root sys ${docdir}/COPYING $srcdir/COPYING
 
@@ -43,3 +44,8 @@ f 0444 root sys ${docdir}/COPYING $srcdir/COPYING
 d 0755 root sys ${sysconfdir} -
 c 0640 root ${webgroup} ${sysconfdir}/dnsdusty.conf $srcdir/dnsdusty.conf
 
+# Debian-specific directives
+%format deb
+%requires libhtml-template-perl
+%requires libcgi-formbuilder-perl
+%requires libnet-dns-perl
