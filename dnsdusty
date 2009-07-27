@@ -21,20 +21,21 @@
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-# $Id: dnsdusty 127 2004-12-23 13:43:11Z jtlayton $
-
+use strict;
 use CGI;
 use CGI::FormBuilder;
 use Net::DNS;
 
 # include the configuration
 require '/etc/dnsdusty/dnsdusty.conf';
+# list variables imported from config file to prevent "perl -w" from complaining
+our (@zones,%users,@types,@classes,$default_ttl,$tsig_key,$tsig_keyname,$templatedir);
 
 # make my pipes piping hot
 $| = 1;
 
 # create CGI object
-$q = CGI->new;
+my $q = CGI->new;
 
 # print header
 print $q->header;
@@ -73,6 +74,21 @@ sub get_resolver_object {
     return \$res;
 }
 
+# recursively search for the primary master DNS of a given zone or
+# return an empty string if nothing is found
+sub get_primary_master {
+    my ($zone) = @_;
+    if ($zone =~ /^\.?$/) { return ''; }
+    my $res = Net::DNS::Resolver->new;
+    my $query = $res->query($zone, "SOA");
+    if ($query) {
+        return ($query->answer)[0]->mname;
+    } else {
+        $zone =~ s/^[\-_a-zA-Z0-9]*\.?//;
+        return get_primary_master($zone);
+    }
+}
+
 # returns a sort value which is an upper case, big-endian (i.e. TLD first),
 # zero-padded string of each domain name
 sub canonicalize_name {
@@ -89,6 +105,7 @@ sub zone_transfer {
     my ($res,$zone,$class) = @_;
     my %mn = (); # hash for munged names of RRs
     my @rr = ();
+    ${$res}->nameservers(&get_primary_master($zone));
     my @zonerecs = ${$res}->axfr($zone,$class);
     foreach my $record (@zonerecs) {
 	next if ($record->type eq 'SOA');
@@ -111,6 +128,7 @@ sub add_records {
     $rr = "$name.$zone $ttl $type \"$content\"" if ( "$type" eq "TXT" );
 
     $update->push(update => rr_add($rr));
+    ${$res}->nameservers(&get_primary_master($zone));
     my $reply = ${$res}->send($update);
 
     # initialize return vars
@@ -134,6 +152,7 @@ sub add_records {
 
 sub del_records {
     my ($res,$zone,$class,@rr) = @_;
+    my $record;
 
     my $update = Net::DNS::Update->new($zone,$class);
 
@@ -142,6 +161,7 @@ sub del_records {
         $update->push(update => rr_del($record));
     }
 
+    ${$res}->nameservers(&get_primary_master($zone));
     # send it
     my $reply = ${$res}->send($update);
 
@@ -164,6 +184,7 @@ sub del_records {
 
 sub main {
     my @allowed_zones = &get_allowed_zones($ENV{REMOTE_USER});
+    my $query; # CHECK.  It is probably redundant.  See "params" method explanation of CGI::FormBuilder".
 
     # form for selecting zone
     my $zone_form = CGI::FormBuilder->new( method => 'POST',
@@ -183,7 +204,7 @@ sub main {
     # construct the form for adding records
     my $add_form = CGI::FormBuilder->new( method => 'POST',
                                           fields => [ qw( name ttl type content zone class ) ],
-                                          validate => { name  => 'HOST',
+                                          validate => { name  => '/^[\-._a-zA-Z0-9]*$/',
                                                         ttl   => 'INT',
                                                         types => \@types,
 							zone  => \@allowed_zones,
@@ -227,6 +248,7 @@ sub main {
 				           template=>"$templatedir/delform.tmpl",
 				           params=>$query,
 				           keepextras=>1,
+				           reset=>1,
 					   name => 'delform',
 					   messages => { form_submit_default => "Delete Selected Records" }
 					   );
@@ -243,8 +265,11 @@ sub main {
 
     my $zone = $allowed_zones[0];
     my $class = $classes[0];
+    my $name = '';
     my $ttl = $default_ttl;
     my $type = $types[0];
+    my $content = '';
+    my @rr;
     my $message = '';
     my $success = 1;
 
@@ -258,15 +283,17 @@ sub main {
     } elsif ( $add_form->submitted and $add_form->validate ) {
         $zone     = $add_form->field('zone');
         $class    = $add_form->field('class');
+        $name     = $add_form->field('name');
 	$ttl      = $add_form->field('ttl');
 	$type     = $add_form->field('type');
+	$content  = $add_form->field('content');
         ($success,$message) = &add_records( $resref,
 					    $zone,
 					    $class,
-					    $add_form->field('name'),
+					    $name,
 					    $ttl,
 					    $type,
-					    $add_form->field('content') );
+					    $content );
 
     } elsif ( $del_form->submitted and $del_form->validate ) {
 	$zone  = $del_form->field('zone');

@@ -1,3 +1,18 @@
+dnsdusty (0.7)
+
+   * fixed validation for RR names in addform so that names with "." in them could be added
+   * added Javascript validation code place-marker js-head to the addform template
+   * added Debian dependencies to EPM configuration file dnsdusty.list
+   * use get_primary_master() to find the authoritative DNS server for updates and transfers
+   * add Changelog to list of document files in dnsdusty.list
+   * include a submit button at the top of the delform template
+   * activate reset button in del_form
+   * added "escape=html" to delform.tmpl to prevent script injection from TXT RRs
+   * declared config file variables in an "our" statement to stop "perl -w" complaints
+   * activated "use strict;" and added missing "my" statements as appropriate
+
+ -- Erik Rossen <rossen@rossen.ch> Mon, Jul 13 09:52:45 CEST 2009
+
 dnsdusty (0.6)
 
    * list entries in domain order
