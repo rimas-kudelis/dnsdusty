@@ -28,8 +28,10 @@ use Net::DNS;
 
 # include the configuration
 require '/etc/dnsdusty/dnsdusty.conf';
+
 # list variables imported from config file to prevent "perl -w" from complaining
-our (@zones,%users,@types,@classes,$default_ttl,$tsig_key,$tsig_keyname,$templatedir);
+our ( @zones, %users, @types, @classes, $default_ttl, $tsig_key, $tsig_keyname,
+    $templatedir );
 
 # make my pipes piping hot
 $| = 1;
@@ -46,31 +48,33 @@ print $q->header;
 # build list of zones that a user is allowed to modify. If user is unset
 # return all the allowed zones.
 sub get_allowed_zones {
-    my $user = shift;
+    my $user          = shift;
     my @allowed_zones = ();
     if ($user) {
         foreach my $zone (@zones) {
-            if (exists $users{$zone}) {
-	        foreach my $allowed_user (@{$users{$zone}}) {
-	            if ($user eq $allowed_user) {
-		        push(@allowed_zones,$zone);
-		        last;
-		    }
-	        }
-	    } else {
-	    push(@allowed_zones,$zone);
-	    }
+            if ( exists $users{$zone} ) {
+                foreach my $allowed_user ( @{ $users{$zone} } ) {
+                    if ( $user eq $allowed_user ) {
+                        push( @allowed_zones, $zone );
+                        last;
+                    }
+                }
+            }
+            else {
+                push( @allowed_zones, $zone );
+            }
         }
-    } else {
-	@allowed_zones = @zones;
+    }
+    else {
+        @allowed_zones = @zones;
     }
     return @allowed_zones;
 }
 
 sub get_resolver_object {
-    my ($tsig_keyname,$tsig_key) = @_;
+    my ( $tsig_keyname, $tsig_key ) = @_;
     my $res = Net::DNS::Resolver->new;
-    $res->tsig($tsig_keyname,$tsig_key);
+    $res->tsig( $tsig_keyname, $tsig_key );
     return \$res;
 }
 
@@ -78,12 +82,13 @@ sub get_resolver_object {
 # return an empty string if nothing is found
 sub get_primary_master {
     my ($zone) = @_;
-    if ($zone =~ /^\.?$/) { return ''; }
+    if ( $zone =~ /^\.?$/ ) { return ''; }
     my $res = Net::DNS::Resolver->new;
-    my $query = $res->query($zone, "SOA");
+    my $query = $res->query( $zone, "SOA" );
     if ($query) {
-        return ($query->answer)[0]->mname;
-    } else {
+        return ( $query->answer )[0]->mname;
+    }
+    else {
         $zone =~ s/^[\-_a-zA-Z0-9]*\.?//;
         return get_primary_master($zone);
     }
@@ -92,43 +97,46 @@ sub get_primary_master {
 # returns a sort value which is an upper case, big-endian (i.e. TLD first),
 # zero-padded string of each domain name
 sub canonicalize_name {
+
     # set number of zeros used to pad sequences of decimal digits
     # NOTE: this is a lazy hack
     my $nzeros = 10;
-    my $mname = uc($1);  # shift everything to uppercase
-    $mname = join ".", reverse split /\./, $mname;  # make domain big-endian
-    $mname =~ s/\d+/sprintf("%0${nzeros}d",$&)/eg;  # zero-pad all decimal sequences
+    my $mname  = uc($1);    # shift everything to uppercase
+    $mname = join ".", reverse split /\./, $mname;    # make domain big-endian
+    $mname =~
+      s/\d+/sprintf("%0${nzeros}d",$&)/eg;    # zero-pad all decimal sequences
     return $mname;
 }
 
 sub zone_transfer {
-    my ($res,$zone,$class) = @_;
-    my %mn = (); # hash for munged names of RRs
+    my ( $res, $zone, $class ) = @_;
+    my %mn = ();                              # hash for munged names of RRs
     my @rr = ();
-    ${$res}->nameservers(&get_primary_master($zone));
-    my @zonerecs = ${$res}->axfr($zone,$class);
+    ${$res}->nameservers( &get_primary_master($zone) );
+    my @zonerecs = ${$res}->axfr( $zone, $class );
     foreach my $record (@zonerecs) {
-	next if ($record->type eq 'SOA');
-	$record->string =~ /(\S+)/; # assume domain name occupies first non-whitespace chars of each record
-	$mn{$record->string} = canonicalize_name($1);
-	push (@rr,$record->string);
+        next if ( $record->type eq 'SOA' );
+        $record->string =~ /(\S+)/
+          ; # assume domain name occupies first non-whitespace chars of each record
+        $mn{ $record->string } = canonicalize_name($1);
+        push( @rr, $record->string );
     }
     my @sortedrr = sort { $mn{$a} cmp $mn{$b} } @rr;
     return \@sortedrr;
 }
 
 sub add_records {
-    my ($res,$zone,$class,$name,$ttl,$type,$content) = @_;
-    
+    my ( $res, $zone, $class, $name, $ttl, $type, $content ) = @_;
+
     # create update packet
-    my $update = Net::DNS::Update->new($zone,$class);
+    my $update = Net::DNS::Update->new( $zone, $class );
     my $rr = "$name.$zone $ttl $type $content";
 
     # EXCEPTION: if type is TXT, put double-quotes around the content...
     $rr = "$name.$zone $ttl $type \"$content\"" if ( "$type" eq "TXT" );
 
-    $update->push(update => rr_add($rr));
-    ${$res}->nameservers(&get_primary_master($zone));
+    $update->push( update => rr_add($rr) );
+    ${$res}->nameservers( &get_primary_master($zone) );
     my $reply = ${$res}->send($update);
 
     # initialize return vars
@@ -137,243 +145,285 @@ sub add_records {
 
     # Did it work?
     if ($reply) {
-	if ($reply->header->rcode eq 'NOERROR') {
+        if ( $reply->header->rcode eq 'NOERROR' ) {
             $message = "Update succeeded";
-	    $success = 1;
-        } else {
+            $success = 1;
+        }
+        else {
             $message = 'Update failed: ' . $reply->header->rcode;
         }
-    } else {
+    }
+    else {
         $message = 'Update failed: ' . $res->errorstring;
     }
 
-    return ($success,$message);
+    return ( $success, $message );
 }
 
 sub del_records {
-    my ($res,$zone,$class,@rr) = @_;
+    my ( $res, $zone, $class, @rr ) = @_;
     my $record;
 
-    my $update = Net::DNS::Update->new($zone,$class);
+    my $update = Net::DNS::Update->new( $zone, $class );
 
     # build update packet(s)
     foreach $record (@rr) {
-        $update->push(update => rr_del($record));
+        $update->push( update => rr_del($record) );
     }
 
-    ${$res}->nameservers(&get_primary_master($zone));
+    ${$res}->nameservers( &get_primary_master($zone) );
+
     # send it
     my $reply = ${$res}->send($update);
 
-    my $msg = '';
+    my $msg     = '';
     my $success = 0;
     if ($reply) {
-        if ($reply->header->rcode eq 'NOERROR') {
-            $msg = "Update succeeded";
-	    $success = 1;
-        } else {
-            $msg = 'Update failed: ' . $reply->header->rcode;
-	    $success = 0;
+        if ( $reply->header->rcode eq 'NOERROR' ) {
+            $msg     = "Update succeeded";
+            $success = 1;
         }
-    } else {
-        $msg = 'Update failed: ' . $res->errorstring;
-	$success = 0;
+        else {
+            $msg     = 'Update failed: ' . $reply->header->rcode;
+            $success = 0;
+        }
     }
-    return ($success,$msg);
+    else {
+        $msg     = 'Update failed: ' . $res->errorstring;
+        $success = 0;
+    }
+    return ( $success, $msg );
 }
 
 sub main {
-    my @allowed_zones = &get_allowed_zones($ENV{REMOTE_USER});
-    my $query; # CHECK.  It is probably redundant.  See "params" method explanation of CGI::FormBuilder".
+    my @allowed_zones = &get_allowed_zones( $ENV{REMOTE_USER} );
+    my $query
+      ; # CHECK.  It is probably redundant.  See "params" method explanation of CGI::FormBuilder".
 
     # form for selecting zone
-    my $zone_form = CGI::FormBuilder->new( method => 'POST',
-    					   fields => [ qw( zone class ) ],
-					   validate => { zone  => \@allowed_zones,
-					   		 class => \@classes },
-					   smartness => 0,
-					   template => "$templatedir/zoneform.tmpl",
-					   params => $query,
-					   keepextras => 1,
-					   name => 'zoneform',
-					   messages => { form_submit_default => "Select New Zone" }
-					 );
-
-
+    my $zone_form = CGI::FormBuilder->new(
+        method   => 'POST',
+        fields   => [qw( zone class )],
+        validate => {
+            zone  => \@allowed_zones,
+            class => \@classes
+        },
+        smartness  => 0,
+        template   => "$templatedir/zoneform.tmpl",
+        params     => $query,
+        keepextras => 1,
+        name       => 'zoneform',
+        messages   => { form_submit_default => "Select New Zone" }
+    );
 
     # construct the form for adding records
-    my $add_form = CGI::FormBuilder->new( method => 'POST',
-                                          fields => [ qw( name ttl type content zone class ) ],
-                                          validate => { name  => '/^[\-._a-zA-Z0-9]*$/',
-                                                        ttl   => 'INT',
-                                                        types => \@types,
-							zone  => \@allowed_zones,
-							class => \@classes },
-                                          smartness=>0,
-                                          template=>"$templatedir/addform.tmpl",
-                                          params=>$query,
-                                          keepextras=>1,
-					  name => 'addform',
-					  messages => { form_submit_default => "Add Record" }
-                                        );
-
+    my $add_form = CGI::FormBuilder->new(
+        method   => 'POST',
+        fields   => [qw( name ttl type content zone class )],
+        validate => {
+            name  => '/^[\-._a-zA-Z0-9]*$/',
+            ttl   => 'INT',
+            types => \@types,
+            zone  => \@allowed_zones,
+            class => \@classes
+        },
+        smartness  => 0,
+        template   => "$templatedir/addform.tmpl",
+        params     => $query,
+        keepextras => 1,
+        name       => 'addform',
+        messages   => { form_submit_default => "Add Record" }
+    );
 
     # set field attributes
-    $add_form->field(name => 'name',
-                     size => 16,
-		     maxlength => 128);
+    $add_form->field(
+        name      => 'name',
+        size      => 16,
+        maxlength => 128
+    );
 
-    $add_form->field(name => 'ttl',
-                     size => 8,
-		     maxlength => 8);
+    $add_form->field(
+        name      => 'ttl',
+        size      => 8,
+        maxlength => 8
+    );
 
-    $add_form->field(name => 'type',
-                     type => 'select',
-		     options => \@types);
+    $add_form->field(
+        name    => 'type',
+        type    => 'select',
+        options => \@types
+    );
 
-    $add_form->field(name => 'content',
-                     size => 32,
-		     maxlength => 255);
+    $add_form->field(
+        name      => 'content',
+        size      => 32,
+        maxlength => 255
+    );
 
-    $add_form->field(name => 'zone');
+    $add_form->field( name => 'zone' );
 
-    $add_form->field(name => 'class');
+    $add_form->field( name => 'class' );
 
     # construct the form for deleting records
-    my $del_form = CGI::FormBuilder->new ( method=>'POST',
-    				           fields=>[ qw( zone class rr ) ],
-				           validate=>{ zone=>\@allowed_zones,
-				       		       class=>\@classes },
-				           smartness=>0,
-				           template=>"$templatedir/delform.tmpl",
-				           params=>$query,
-				           keepextras=>1,
-				           reset=>1,
-					   name => 'delform',
-					   messages => { form_submit_default => "Delete Selected Records" }
-					   );
+    my $del_form = CGI::FormBuilder->new(
+        method   => 'POST',
+        fields   => [qw( zone class rr )],
+        validate => {
+            zone  => \@allowed_zones,
+            class => \@classes
+        },
+        smartness  => 0,
+        template   => "$templatedir/delform.tmpl",
+        params     => $query,
+        keepextras => 1,
+        reset      => 1,
+        name       => 'delform',
+        messages   => { form_submit_default => "Delete Selected Records" }
+    );
 
-    $del_form->field(name=>'class',
-                     type=>'hidden');
+    $del_form->field(
+        name => 'class',
+        type => 'hidden'
+    );
 
-    $del_form->field(name=>'zone',
-                     type=>'hidden');
+    $del_form->field(
+        name => 'zone',
+        type => 'hidden'
+    );
 
-    $del_form->field(name=>'rr',
-                     type=>'checkbox',
-		     multiple=>1);
+    $del_form->field(
+        name     => 'rr',
+        type     => 'checkbox',
+        multiple => 1
+    );
 
-    my $zone = $allowed_zones[0];
-    my $class = $classes[0];
-    my $name = '';
-    my $ttl = $default_ttl;
-    my $type = $types[0];
+    my $zone    = $allowed_zones[0];
+    my $class   = $classes[0];
+    my $name    = '';
+    my $ttl     = $default_ttl;
+    my $type    = $types[0];
     my $content = '';
     my @rr;
     my $message = '';
     my $success = 1;
 
     # get a resolver handle
-    my $resref = &get_resolver_object($tsig_keyname,$tsig_key);
+    my $resref = &get_resolver_object( $tsig_keyname, $tsig_key );
 
     # get zone and class out of whatever form was submitted
     if ( $zone_form->submitted and $zone_form->validate ) {
         $zone  = $zone_form->field('zone');
-	$class = $zone_form->field('class');
-    } elsif ( $add_form->submitted and $add_form->validate ) {
-        $zone     = $add_form->field('zone');
-        $class    = $add_form->field('class');
-        $name     = $add_form->field('name');
-	$ttl      = $add_form->field('ttl');
-	$type     = $add_form->field('type');
-	$content  = $add_form->field('content');
-        ($success,$message) = &add_records( $resref,
-					    $zone,
-					    $class,
-					    $name,
-					    $ttl,
-					    $type,
-					    $content );
+        $class = $zone_form->field('class');
+    }
+    elsif ( $add_form->submitted and $add_form->validate ) {
+        $zone    = $add_form->field('zone');
+        $class   = $add_form->field('class');
+        $name    = $add_form->field('name');
+        $ttl     = $add_form->field('ttl');
+        $type    = $add_form->field('type');
+        $content = $add_form->field('content');
+        ( $success, $message ) =
+          &add_records( $resref, $zone, $class, $name, $ttl, $type, $content );
 
-    } elsif ( $del_form->submitted and $del_form->validate ) {
-	$zone  = $del_form->field('zone');
-	$class = $del_form->field('class');
-	@rr    = $del_form->field('rr');
-        ($success,$message) = &del_records( $resref,
-					    $zone,
-					    $class,
-					    @rr );
+    }
+    elsif ( $del_form->submitted and $del_form->validate ) {
+        $zone  = $del_form->field('zone');
+        $class = $del_form->field('class');
+        @rr    = $del_form->field('rr');
+        ( $success, $message ) = &del_records( $resref, $zone, $class, @rr );
     }
 
-    $zone_form->field(name    => 'zone',
-                      type    => 'select',
-		      value   => $zone,
-		      options => \@allowed_zones );
+    $zone_form->field(
+        name    => 'zone',
+        type    => 'select',
+        value   => $zone,
+        options => \@allowed_zones
+    );
 
-    $zone_form->field(name    => 'class',
-                      type    => 'select',
-		      value   => $class,
-		      options => \@classes);
+    $zone_form->field(
+        name    => 'class',
+        type    => 'select',
+        value   => $class,
+        options => \@classes
+    );
 
     # throw an error alert box if the last update was not successful
-    if (! $success) {
+    if ( !$success ) {
         $zone_form->tmpl_param( message => $message );
     }
 
     print $zone_form->render;
 
-    $add_form->field(name => 'name',
-                     size => 16,
-		     maxlength => 128,
-		     value => '',
-		     force => 1 );
+    $add_form->field(
+        name      => 'name',
+        size      => 16,
+        maxlength => 128,
+        value     => '',
+        force     => 1
+    );
 
-    $add_form->field(name => 'content',
-                     size => 32,
-		     maxlength => 255,
-		     value => '',
-		     force => 1 );
+    $add_form->field(
+        name      => 'content',
+        size      => 32,
+        maxlength => 255,
+        value     => '',
+        force     => 1
+    );
 
-    $add_form->field(name => 'ttl',
-                     size => 8,
-		     value => $ttl,
-		     maxlength => 8);
+    $add_form->field(
+        name      => 'ttl',
+        size      => 8,
+        value     => $ttl,
+        maxlength => 8
+    );
 
-    $add_form->field(name => 'type',
-                     type => 'select',
-		     value => $type,
-		     options => \@types);
+    $add_form->field(
+        name    => 'type',
+        type    => 'select',
+        value   => $type,
+        options => \@types
+    );
 
-    $add_form->field(name => 'zone',
-    		     type => 'hidden',
-		     value => $zone);
+    $add_form->field(
+        name  => 'zone',
+        type  => 'hidden',
+        value => $zone
+    );
 
-    $add_form->field(name => 'class',
-    		     type => 'hidden',
-		     value => $class);
+    $add_form->field(
+        name  => 'class',
+        type  => 'hidden',
+        value => $class
+    );
 
-    $add_form->tmpl_param(zone => $zone);
-    $add_form->tmpl_param(class => $class);
+    $add_form->tmpl_param( zone  => $zone );
+    $add_form->tmpl_param( class => $class );
 
     print $add_form->render;
 
-    $del_form->field(name => 'zone',
-    		     type => 'hidden',
-		     value => $zone);
+    $del_form->field(
+        name  => 'zone',
+        type  => 'hidden',
+        value => $zone
+    );
 
-    $del_form->field(name => 'class',
-    		     type => 'hidden',
-		     value => $class);
+    $del_form->field(
+        name  => 'class',
+        type  => 'hidden',
+        value => $class
+    );
 
     $del_form->tmpl_param( zone  => $zone );
     $del_form->tmpl_param( class => $class );
 
-    my $rropts = &zone_transfer($resref,$zone,$class);
+    my $rropts = &zone_transfer( $resref, $zone, $class );
 
-    $del_form->field(name=>'rr',
-                     type=>'checkbox',
-		     multiple=>1,
-		     options=>$rropts);
+    $del_form->field(
+        name     => 'rr',
+        type     => 'checkbox',
+        multiple => 1,
+        options  => $rropts
+    );
 
     print $del_form->render;
 
