@@ -1,20 +1,21 @@
 <!-- delform.tmpl -->
-<hr>
 <tmpl_var form-start>
+<fieldset>
+<legend>Manage Existing Records</legend>
 <tmpl_var field-zone> <tmpl_var field-class>
-<p>
 <tmpl_var form-submit><tmpl_var form-reset>
-<table border>
+<table>
 <tr>
-    <th>Delete?</th>
+    <th></th>
     <th>Record</th>
 </tr>
 <tmpl_loop loop-rr>
     <tr><td align="center"><input name="rr" type="checkbox" value="<tmpl_var escape=html value>"></td><td><tt><tmpl_var escape=html label></tt></td></tr>
 </tmpl_loop>
 </table>
-<p>
 <tmpl_var form-submit><tmpl_var form-reset>
+</fieldset>
 <tmpl_var form-end>
+</div>
 </body>
 </html>
