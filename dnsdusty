@@ -130,10 +130,12 @@ sub add_records {
 
     # create update packet
     my $update = Net::DNS::Update->new( $zone, $class );
-    my $rr = "$name.$zone $ttl $type $content";
+    my $full_name = "$name.$zone";
+    $full_name = "$zone" if ("$name" eq "");
+    my $rr = "$full_name $ttl $type $content";
 
     # EXCEPTION: if type is TXT, put double-quotes around the content...
-    $rr = "$name.$zone $ttl $type \"$content\"" if ( "$type" eq "TXT" );
+    $rr = "$full_name $ttl $type \"$content\"" if ( "$type" eq "TXT" );
 
     $update->push( update => rr_add($rr) );
     ${$res}->nameservers( &get_primary_master($zone) );
