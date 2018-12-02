@@ -45,7 +45,7 @@ Installing DNSDusty:
 
 DNSDusty comes set up to be installed according to the Debian packaging
 guidelines. The sources also come with an EPM listfile. If you have the EPM
-program installed (see http://www.easysw.com), then you should be able to
+program installed (see https://www.msweet.org/epm/), then you should be able to
 package the software by running:
 
     % epm -v -f native dnsdusty
@@ -93,10 +93,7 @@ required.
 
 Problems, Questions and Patches:
 
-If you have problems, questions, suggestions or patches, then I can be
-contacted via email at:
-
-    jtlayton@poochiereds.net
-
+If you have problems, questions, suggestions or patches, feel free to report
+these issues or (preferably) create pull requests on GitHub.
 
 Enjoy!
