@@ -1,3 +1,9 @@
+dnsdusty (0.8)
+
+   * using nicer templates (although they too look way too ascetic by now)
+   * added more allowed record types (AAAA, CAA, NS, MX)
+   * fixed addition of top-level records
+
 dnsdusty (0.7)
 
    * fixed validation for RR names in addform so that names with "." in them could be added
