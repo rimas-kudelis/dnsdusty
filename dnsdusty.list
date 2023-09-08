@@ -19,11 +19,11 @@ $webgroup=www-data
 # Product information
 %product DNSDusty
 %copyright 2004 by Jeffrey Layton, all rights reserved.
-%vendor http://www.poochiereds.net/dnsdusty
+%vendor https://github.com/rimas-kudelis/dnsdusty/
 %license ${srcdir}/COPYING
 %readme ${srcdir}/README
 %description Web-Based DDNS Management Tool
-%version 0.8
+%version 0.9
 
 # CGI programs
 %system all

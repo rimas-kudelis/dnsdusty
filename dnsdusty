@@ -30,7 +30,7 @@ use Net::DNS;
 require '/etc/dnsdusty/dnsdusty.conf';
 
 # list variables imported from config file to prevent "perl -w" from complaining
-our ( @zones, %users, @types, @classes, $default_ttl, $tsig_key, $tsig_keyname,
+our ( @zones, %users, @types, @classes, $default_ttl, $tsig_keyfile,
     $templatedir );
 
 # make my pipes piping hot
@@ -72,9 +72,9 @@ sub get_allowed_zones {
 }
 
 sub get_resolver_object {
-    my ( $tsig_keyname, $tsig_key ) = @_;
+    my ( $tsig_keyfile ) = @_;
     my $res = Net::DNS::Resolver->new;
-    $res->tsig( $tsig_keyname, $tsig_key );
+    $res->tsig( $tsig_keyfile );
     return \$res;
 }
 
@@ -223,7 +223,7 @@ sub main {
         method   => 'POST',
         fields   => [qw( name ttl type content zone class )],
         validate => {
-            name  => '/^[\-._a-zA-Z0-9]*$/',
+            name  => '/^[\-._*a-zA-Z0-9]*$/',
             ttl   => 'INT',
             types => \@types,
             zone  => \@allowed_zones,
@@ -310,7 +310,7 @@ sub main {
     my $success = 1;
 
     # get a resolver handle
-    my $resref = &get_resolver_object( $tsig_keyname, $tsig_key );
+    my $resref = &get_resolver_object( $tsig_keyfile );
 
     # get zone and class out of whatever form was submitted
     if ( $zone_form->submitted and $zone_form->validate ) {

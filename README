@@ -5,19 +5,18 @@ Setting up BIND for dynamic updates:
 You'll need to set up BIND so that it accepts signed dynamic updates for your
 zone. Here's an overview:
 
-1) generate a key using dnssec-keygen. For instance:
+1) generate a key using tsig-keygen like this:
 
-    % dnssec-keygen  -b 256 -n HOST -a HMAC-MD5 example
+    % tsig-keygen DNSDusty > /etc/dnsdusty/dnsdusty.key
 
-   this will create 2 files, both containing the same key in different
-   formats.
+   this will create the key that will be used when signing zone update requests.
 
 2) add this key to your named.conf file in a stanza like this:
 
-    key "DNSDusty" {
-        algorithm       hmac-md5;
-        secret "0QI/OEYtZA5aI6rpMTwrodfMpg1xxCaDHdR/tvI9Lgc=";
-    };
+   key "DNSDusty" {
+       algorithm hmac-sha256;
+       secret "rUnmCsAl8Q+fC0Td4Og5NrnyYyNARV+Hsy637/fNvAs=";
+   };
 
 3) For each zone that you want to manage with DNSDusty, add this keyname to
    both your 'allow-update' and 'allow-transfer' lists:
@@ -56,10 +55,10 @@ You'll then need to modify the config file, which is by default:
 
 /etc/dnsdusty/dnsdusty.conf.
 
-The config file should only be writable by root, and only readable by the
-user that your webserver runs as. Since it contains the key to allow updates
-to your webserver, make sure that you secure it well, unless you want the
-world to be able to update your server.
+Both the config file and the key file should only be writable by root, and only
+readable by the user that your webserver runs as. Since it contains the key to
+allow updates to your webserver, make sure that you secure it well, unless you
+want the world to be able to update your server.
 
 Setting up Apache:
 

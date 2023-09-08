@@ -1,8 +1,20 @@
+dnsdusty (0.9)
+   * minor update to work with recent versions of Bind9 and Net::DNS:
+     - HMAC-MD5 keys are no longer supported
+     - README: use tsig-keygen for key generation
+     - point to the key file in config instead of including the key itself
+   * allow wildcard subdomain names
+   * changed default template directory in the supplied .conf file
+     
+ -- Rimas Kudelis <rimas@kudelis.lt> Fri, Sep  8 19:29:56 EEST 2023
+
 dnsdusty (0.8)
 
    * using nicer templates (although they too look way too ascetic by now)
    * added more allowed record types (AAAA, CAA, NS, MX)
    * fixed addition of top-level records
+
+ -- Rimas Kudelis <rimas@kudelis.lt> Sun, Dec 2 08:49:14 EET 2018
 
 dnsdusty (0.7)
 
@@ -46,4 +58,3 @@ dnsdusty (0.3)
    * First public release!
 
  -- Jeffrey Layton <jtlayton@poochiereds.net> Sat, 21 Feb 2004 08:19:11 -0500
-
